@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "weekchef"
+version = "0.1.0"
+description = "Week Chef PoC — weekly meal planning assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.5",
+    "pydantic-settings>=2.0",
+    "psycopg[binary]>=3.1",
+    "asyncpg>=0.29",
+    "httpx>=0.26",
+    "google-api-python-client>=2.100",
+    "google-auth-oauthlib>=1.2",
+    "aiogram>=3.4",
+    "openai>=1.40",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+weekchef-plan = "weekchef.cli_plan:main_sync"
+weekchef-replan = "weekchef.cli_replan:main_sync"
+weekchef-google-oauth = "weekchef.google_oauth.__main__:main"
+weekchef-bot = "weekchef.telegram.bot:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

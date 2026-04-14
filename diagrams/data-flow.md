@@ -100,9 +100,3 @@ flowchart LR
 
 - Логи: **7–14 дней** (как в `governance.md`).
 - Пользовательские данные: по удалению или TTL **~30 дней** для PoC — уточняется в политике продукта.
-
----
-
-## Как открыть диаграммы
-
-Mermaid preview в IDE или [mermaid.live](https://mermaid.live).
