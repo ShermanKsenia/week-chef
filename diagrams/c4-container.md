@@ -1,6 +1,6 @@
 # C4 — Container: WeekChef (синхронный / один процесс Backend)
 
-Граница системы, контейнеры внутри и внешние API. Соответствует схеме с **Telegram handler**, **Orchestrator** и двумя БД.
+Граница системы, контейнеры внутри и внешние API. Соответствует схеме со **Streamlit UI**, **Orchestrator** и двумя БД.
 
 ```mermaid
 flowchart TB
@@ -12,18 +12,16 @@ flowchart TB
       PG2[("PostgreSQL\nrecipes")]
     end
     subgraph be["Backend"]
-      TH[Telegram handler]
+      ST[Streamlit UI]
       OR[Orchestrator]
     end
   end
 
-  TG[Telegram API]
   GCal[Google Calendar API]
   LLM[LLM API]
 
-  User -->|чат| TG
-  TG <-->|webhook / long polling| TH
-  TH --> OR
+  User -->|браузер| ST
+  ST --> OR
 
   OR -->|читает / пишет| PG1
   OR -->|поиск рецептов по фильтрам| PG2

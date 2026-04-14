@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-from weekchef.schemas import CalendarFreeBusy, TimeWindow, UserProfile
+from weekchef.schemas import CalendarFreeBusy, TimeWindow, UserProfile, WeeklyPlan
 
 
 def _parse_rfc3339(s: str) -> datetime:
@@ -111,6 +111,52 @@ def calendar_free_busy_for_profile(
         w0.strftime("%Y-%m-%dT%H:%M:%SZ"),
         w1.strftime("%Y-%m-%dT%H:%M:%SZ"),
     )
+
+
+def cook_events_from_weekly_plan(plan: WeeklyPlan) -> list[dict[str, str]]:
+    """Build Calendar API ``events.insert`` bodies from planned cook windows."""
+    events: list[dict[str, str]] = []
+    for day in plan.days:
+        for m in day.meals:
+            events.append(
+                {
+                    "summary": f"Cook: {m.title}",
+                    "start": m.cook_window.start,
+                    "end": m.cook_window.end,
+                }
+            )
+    return events
+
+
+def calendar_insert_events(
+    creds: Credentials,
+    calendar_id: str,
+    events: list[dict[str, str]],
+    *,
+    max_events: int = 50,
+) -> tuple[list[str], str | None]:
+    """
+    Insert timed events. Returns ``(created_event_ids, error_message)``.
+    ``error_message`` is set on first API failure (partial creates may still be listed in ids).
+    """
+    from googleapiclient.errors import HttpError
+
+    service = build("calendar", "v3", credentials=creds, cache_discovery=False)
+    created: list[str] = []
+    for ev in events[:max_events]:
+        body = {
+            "summary": ev.get("summary") or "Cook",
+            "start": {"dateTime": ev["start"]},
+            "end": {"dateTime": ev["end"]},
+        }
+        try:
+            resp = service.events().insert(calendarId=calendar_id, body=body).execute()
+            eid = resp.get("id")
+            if eid:
+                created.append(eid)
+        except HttpError as e:
+            return created, str(e)
+    return created, None
 
 
 def synthetic_calendar_week(profile: UserProfile) -> CalendarFreeBusy:

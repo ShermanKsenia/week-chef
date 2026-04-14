@@ -28,6 +28,24 @@ def _shared_kwargs(settings: Settings) -> dict[str, Any]:
     return kw
 
 
+def _langfuse_openai_enabled(settings: Settings) -> bool:
+    if not settings.langfuse_tracing_enabled:
+        return False
+    if not (
+        settings.langfuse_public_key.strip()
+        and settings.langfuse_secret_key.strip()
+    ):
+        return False
+    try:
+        import langfuse.openai  # noqa: F401 — registers OpenAI method wrappers
+    except ImportError as e:
+        raise ImportError(
+            "WEEKCHEF_LANGFUSE_ENABLED is true but the 'langfuse' package is not installed. "
+            "Install with: pip install 'weekchef[langfuse]'"
+        ) from e
+    return True
+
+
 def build_sync_openai_client(
     settings: Settings | None = None,
     *,
@@ -43,6 +61,12 @@ def build_sync_openai_client(
         raise ValueError(msg)
     kw = _shared_kwargs(s)
     kw["api_key"] = key or "sk-or-v1-placeholder"
+    if _langfuse_openai_enabled(s):
+        from weekchef.llm.langfuse_util import ensure_langfuse_client
+        from langfuse.openai import OpenAI as LangfuseOpenAI
+
+        ensure_langfuse_client(s)
+        return LangfuseOpenAI(**kw)
     return OpenAI(**kw)
 
 
@@ -61,4 +85,10 @@ def build_async_openai_client(
         raise ValueError(msg)
     kw = _shared_kwargs(s)
     kw["api_key"] = key or "sk-or-v1-placeholder"
+    if _langfuse_openai_enabled(s):
+        from weekchef.llm.langfuse_util import ensure_langfuse_client
+        from langfuse.openai import AsyncOpenAI as LangfuseAsyncOpenAI
+
+        ensure_langfuse_client(s)
+        return LangfuseAsyncOpenAI(**kw)
     return AsyncOpenAI(**kw)
