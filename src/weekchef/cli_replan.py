@@ -44,6 +44,24 @@ def main_sync(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-calendar-passes", type=int, default=3)
     args = parser.parse_args(argv)
 
+    profile_path = args.profile.expanduser().resolve()
+    if not profile_path.is_file():
+        print(
+            "Error: profile file not found or not a regular file:\n"
+            f"  {args.profile}\n"
+            "Example: --profile fixtures/profile.json",
+            file=sys.stderr,
+        )
+        return 2
+    plan_in_path = args.plan_in.expanduser().resolve()
+    if not plan_in_path.is_file():
+        print(
+            "Error: plan file not found or not a regular file:\n"
+            f"  {args.plan_in}",
+            file=sys.stderr,
+        )
+        return 2
+
     dates = [d.strip() for d in args.dates.split(",") if d.strip()]
     slot_ids = [s.strip() for s in args.slot_ids.split(",") if s.strip()]
 
@@ -55,10 +73,10 @@ def main_sync(argv: list[str] | None = None) -> int:
 
     settings = get_settings()
     dsn = args.dsn or settings.database_url
-    profile = load_profile(args.profile)
+    profile = load_profile(profile_path)
     rng = random.Random(args.seed) if args.seed is not None else random.Random()
 
-    raw = json.loads(args.plan_in.read_text(encoding="utf-8"))
+    raw = json.loads(plan_in_path.read_text(encoding="utf-8"))
     plan = WeeklyPlan.model_validate(raw)
 
     result = None

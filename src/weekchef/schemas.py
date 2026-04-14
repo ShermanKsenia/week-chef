@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class IngredientItem(BaseModel):
@@ -31,9 +31,15 @@ class RecipeCard(BaseModel):
 
 
 class RecipeFilters(BaseModel):
-    max_ready_minutes: int | None = None
+    """Retriever input (see docs/specs/retriever.md): time cap, bans/allergens, limit is separate arg."""
+
+    max_ready_minutes: int | None = Field(
+        default=None,
+        validation_alias=AliasChoices("max_ready_minutes", "max_ready_time"),
+    )
     meal_types: list[str] | None = None
     banned_ingredient_substrings: list[str] = Field(default_factory=list)
+    allergen_substrings: list[str] = Field(default_factory=list)
 
 
 class Restrictions(BaseModel):

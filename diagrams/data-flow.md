@@ -2,18 +2,18 @@
 
 ## 1. Основной поток данных (логический)
 
-Пользователь ↔ Telegram; оркестратор тянет внешние API и читает/пишет БД. Стрелки — **данные**, не только вызовы.
+Пользователь ↔ Streamlit (веб-интерфейс); оркестратор тянет внешние API и читает/пишет БД. Стрелки — **данные**, не только вызовы.
 
 ```mermaid
 flowchart TB
   subgraph ext["Вне системы"]
     U((Пользователь))
-    TG[Telegram Bot API]
     GC[Google Calendar API]
     LLM[LLM API]
   end
 
   subgraph wc["WeekChef: Backend"]
+    ST[Streamlit\nвеб-приложение]
     OR[Orchestrator + модули\nпланирования, валидация, список покупок]
   end
 
@@ -22,8 +22,8 @@ flowchart TB
     REC[(Recipes DB\nрецепты, ингредиенты,\nКБЖУ, теги)]
   end
 
-  U <-->|текст сообщений| TG
-  TG <-->|updates / sendMessage| OR
+  U <-->|HTTP / сессия| ST
+  ST <-->|вызовы планировщика| OR
 
   OR -->|free/busy интервалы,\nтаймзона| GC
   OR -->|запросы completions,\nstructured output| LLM

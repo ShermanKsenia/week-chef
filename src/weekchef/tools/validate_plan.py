@@ -6,6 +6,7 @@ from psycopg import Connection
 
 from weekchef.config import Settings
 from weekchef.db.recipes_repo import RecipesRepository
+from weekchef.profile_utils import extract_calories
 from weekchef.schemas import UserProfile, ValidatePlanResult, WeeklyPlan
 
 
@@ -63,9 +64,9 @@ def validate_plan(
                     continue
                 for e in card.energy:
                     if e.energy_type.lower() == "calories":
-                        digits = "".join(ch for ch in e.quantity if ch.isdigit())
-                        if digits:
-                            total_kcal += int(digits)
+                        kcal = extract_calories(e.quantity)
+                        if kcal is not None:
+                            total_kcal += kcal
                             n += 1
         if n > 0 and total_kcal / 7 > profile.goal_calories_per_day * 1.5:
             reason_codes.append("calories_goal_soft_exceeded")

@@ -20,24 +20,32 @@ from weekchef.schemas import (
     UserProfile,
     WeeklyPlan,
 )
+from weekchef.observability import get_logger
 from weekchef.tools.calendar import calendar_free_busy_for_profile, synthetic_calendar_week
 from weekchef.tools.shopping import build_shopping_list, recipe_ids_from_plan
+
+_log = get_logger("weekchef.orchestrator")
 
 
 def enrich_calendar(conn: Connection, profile: UserProfile, settings: Settings) -> CalendarFreeBusy:
     """
     ENRICH step: load free/busy for the profile week, or synthetic windows when Calendar is off.
+
+    If Google Calendar is enabled globally but this user has no OAuth row yet, falls back to
+    synthetic slots so planning (e.g. Streamlit) does not hard-fail; see log
+    ``enrich_calendar_oauth_missing``.
     """
     if not settings.google_calendar_enabled:
         return synthetic_calendar_week(profile)
 
     creds = credentials_from_db(conn, profile.user_id, settings)
     if creds is None:
-        msg = (
-            f"No Google OAuth token for user_key={profile.user_id!r}. "
-            "Run: python -m weekchef.google_oauth --user-key <id>"
+        _log.warning(
+            "enrich_calendar_oauth_missing",
+            user_key=profile.user_id,
+            message="GOOGLE_CALENDAR_ENABLED but no token; using synthetic_calendar_week",
         )
-        raise RuntimeError(msg)
+        return synthetic_calendar_week(profile)
 
     creds = refresh_and_persist_if_needed(conn, profile.user_id, creds)
     raw = calendar_free_busy_for_profile(creds, settings.google_calendar_id, profile)

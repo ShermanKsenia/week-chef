@@ -14,8 +14,11 @@ from psycopg import Connection
 from weekchef.config import Settings
 from weekchef.db.app import oauth_token_get, oauth_token_save
 
-# Read-only calendar access for free/busy
-SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+# Free/busy reads + event creation (Telegram /confirm_calendar); re-auth if token lacks scopes
+SCOPES = [
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
+]
 
 
 def credentials_from_token_dict(

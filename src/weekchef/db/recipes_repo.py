@@ -8,7 +8,16 @@ from typing import Any
 from psycopg import Connection
 from psycopg import sql
 
+from weekchef.db.recipe_meal_filter import filter_by_meal_hints_or_fallback
 from weekchef.schemas import IngredientItem, EnergyItem, RecipeCard, RecipeFilters
+
+
+def _combined_ban_substrings(filters: RecipeFilters) -> list[str]:
+    return [
+        b.lower()
+        for b in (*filters.banned_ingredient_substrings, *filters.allergen_substrings)
+        if b and str(b).strip()
+    ]
 
 
 class RecipesRepository:
@@ -54,9 +63,6 @@ class RecipesRepository:
         if filters.max_ready_minutes is not None:
             parts.append(sql.SQL(" AND time_cook IS NOT NULL AND time_cook <= %s "))
             params.append(filters.max_ready_minutes)
-        if filters.meal_types:
-            parts.append(sql.SQL(" AND label = ANY(%s) "))
-            params.append(filters.meal_types)
         parts.append(sql.SQL(" ORDER BY id "))
         parts.append(sql.SQL(" LIMIT %s "))
         params.append(limit * 20)
@@ -67,7 +73,7 @@ class RecipesRepository:
             rows = cur.fetchall()
 
         out: list[RecipeCard] = []
-        banned = [b.lower() for b in filters.banned_ingredient_substrings]
+        banned = _combined_ban_substrings(filters)
         for row in rows:
             card = self._parse_row(row)
             ing_blob = " ".join(i.ingredient.lower() for i in card.ingredients)
@@ -77,7 +83,8 @@ class RecipesRepository:
             out.append(card)
             if len(out) >= limit:
                 break
-        return out
+        out = filter_by_meal_hints_or_fallback(out, filters.meal_types)
+        return out[:limit]
 
     def get_by_ids(self, ids: list[int]) -> dict[int, RecipeCard]:
         if not ids:

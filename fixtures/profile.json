@@ -11,7 +11,6 @@
   },
   "servings": 2,
   "meals_per_day": 3,
-  "meal_types": ["Breakfast", "Lunch", "Dinner"],
   "equipment": [],
   "week_anchor_date": "2026-04-13",
   "planning_defaults": {

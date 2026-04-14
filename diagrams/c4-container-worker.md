@@ -11,7 +11,7 @@ flowchart TB
       PG1[("PostgreSQL\nstate, sessions, inventory")]
       PG2[("PostgreSQL\nrecipes")]
     end
-    BE[Backend API\nTelegram handler,\nпостановка задач]
+    BE[Backend API\nStreamlit UI,\nпостановка задач]
     W[Worker\nпланирование,\nLLM, валидация]
     Q[("Очередь задач\nRedis / Broker / jobs table")]
     BE -->|enqueue| Q
@@ -21,12 +21,10 @@ flowchart TB
     W -->|поиск рецептов| PG2
   end
 
-  TG[Telegram API]
   GCal[Google Calendar API]
   LLM[LLM API]
 
-  User -->|чат| TG
-  TG <-->|webhook / long polling| BE
+  User -->|браузер| BE
 
   W -->|OAuth / слоты| GCal
   W -->|запросы модели| LLM

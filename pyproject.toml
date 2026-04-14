@@ -18,16 +18,24 @@ dependencies = [
     "google-auth-oauthlib>=1.2",
     "aiogram>=3.4",
     "openai>=1.40",
+    "structlog>=24.4.0",
+    "opentelemetry-api>=1.27.0",
+    "opentelemetry-sdk>=1.27.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.27.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "langfuse>=3.14,<5"]
+langfuse = ["langfuse>=3.14,<5"]
+telegram_socks = ["aiohttp-socks>=0.8"]
+web = ["streamlit>=1.28"]
 
 [project.scripts]
 weekchef-plan = "weekchef.cli_plan:main_sync"
 weekchef-replan = "weekchef.cli_replan:main_sync"
 weekchef-google-oauth = "weekchef.google_oauth.__main__:main"
 weekchef-bot = "weekchef.telegram.bot:main"
+weekchef-llm-health = "weekchef.llm.health:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
