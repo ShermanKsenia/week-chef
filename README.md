@@ -63,3 +63,74 @@
 4. **Не мультипользовательская/семейная оптимизация**
 - Один пользователь, без сложного “у всех разные предпочтения/аллергии” и без оптимизации на 4 человек
 
+## Запуск сервиса локально (самостоятельно)
+
+Ниже — минимальный путь до веб-интерфейса (Streamlit) и опционально CLI. Нужны **Python 3.11+** и **PostgreSQL**.
+
+### 1. Репозиторий и окружение
+
+```bash
+git clone https://github.com/ShermanKsenia/week-chef.git
+cd week-chef
+python3.11 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -U pip
+pip install -e ".[web]"     # Streamlit; для тестов: pip install -e ".[web,dev]"
+```
+
+### 2. База данных
+
+Создайте БД в PostgreSQL и примените миграции **по порядку** (имена таблиц и схемы — как в файлах):
+
+```bash
+psql "$DATABASE_URL" -f migrations/001_recipies_db.sql
+psql "$DATABASE_URL" -f migrations/002_app_tables.sql
+psql "$DATABASE_URL" -f migrations/003_recipies_db_ensure_id.sql
+psql "$DATABASE_URL" -f migrations/004_profiles.sql
+```
+
+Подставьте свой URL вместо переменной или используйте флаг `-d mydb -U user` и т.д.
+
+Каталог рецептов в таблице `recipies_db` (или имя из `RECIPES_TABLE` в `.env`) нужно заполнить данными: например, скриптом [`scripts/load_recipes_to_pg.py`](scripts/load_recipes_to_pg.py) при наличии CSV (см. также [`scripts/transform_recipes_csv.py`](scripts/transform_recipes_csv.py)).
+
+### 3. Переменные окружения
+
+```bash
+cp .env.example .env
+```
+
+Обязательно задайте в `.env` как минимум:
+
+- `DATABASE_URL` — строка подключения к PostgreSQL.
+- `OPENROUTER_API_KEY` — ключ для OpenRouter (чат в Streamlit вызывает `parse_input` и при необходимости другие LLM-шаги оркестратора).
+
+Остальные переменные описаны в [`.env.example`](.env.example). Для планирования **без** LLM-подбора блюд оставьте `PLANNER_USE_LLM=false` (детерминированный планировщик); парсинг запроса пользователя всё равно идёт через LLM.
+
+Профиль по умолчанию для первого запуска берётся из `fixtures/profile.json` (можно переопределить переменной `WEEKCHEF_PROFILE_PATH`).
+
+### 4. Веб-интерфейс (Streamlit)
+
+Из **корня репозитория** (рядом с `streamlit_app.py`):
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Откройте в браузере адрес, который выведет Streamlit (обычно `http://localhost:8501`). В чате опишите неделю питания — вызывается фасад `process_user_turn` (intake, уточнения, затем пайплайн плана и списка покупок при успешной валидации).
+
+### 5. CLI (опционально)
+
+После установки пакета доступны точки входа из [`pyproject.toml`](pyproject.toml):
+
+- `weekchef-plan` — недельный план через оркестратор.
+- `weekchef-replan` — перепланирование.
+- `weekchef-llm-health` — проверка доступности LLM.
+
+Запускайте их с активированным `.venv` и настроенным `.env` в текущей директории (или экспортируйте переменные в окружение).
+
+### 6. Тесты
+
+```bash
+pytest
+```
+
